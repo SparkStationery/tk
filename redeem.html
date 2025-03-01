@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Redeem Code - Spark Stationery</title>
   <style>
     /* Reset styles */
@@ -11,7 +11,6 @@
       margin: 0;
       padding: 0;
     }
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f5f5f5;
@@ -21,7 +20,6 @@
       height: 100vh;
       color: #333;
     }
-
     .redeem-container {
       background: #fff;
       padding: 40px;
@@ -30,17 +28,14 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       text-align: center;
     }
-
     .logo {
       width: 100px;
       margin-bottom: 20px;
     }
-
     h1 {
       font-size: 22px;
       margin-bottom: 20px;
     }
-
     .input-field {
       width: 100%;
       padding: 12px;
@@ -50,7 +45,6 @@
       text-align: center;
       margin-bottom: 10px;
     }
-
     .redeem-btn, .back-btn {
       width: 100%;
       padding: 12px;
@@ -61,32 +55,31 @@
       transition: background-color 0.3s ease;
       margin-top: 10px;
     }
-
     .redeem-btn {
       background-color: #28a745;
       color: white;
     }
-
     .redeem-btn:hover {
       background-color: #218838;
     }
-
     .back-btn {
       background-color: #007bff;
       color: white;
     }
-
     .back-btn:hover {
       background-color: #0056b3;
     }
-
     .message {
       margin-top: 15px;
       font-size: 14px;
     }
+    .points-display {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 10px;
+      color: #28a745;
+    }
   </style>
-
-  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -109,7 +102,7 @@
 
     let currentUser = null;
 
-    // Check authentication
+    // 监听用户登录状态
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
@@ -119,7 +112,7 @@
       }
     });
 
-    // Function to redeem code
+    // 兑换代码函数
     async function redeemCode() {
       const codeInput = document.getElementById("code-input").value.trim();
       const messageBox = document.getElementById("message");
@@ -131,7 +124,7 @@
       }
 
       try {
-        // Check if the code exists
+        // 检查 Firestore 中是否存在该兑换码
         const codeRef = doc(db, "codes", codeInput);
         const codeDoc = await getDoc(codeRef);
 
@@ -142,8 +135,7 @@
         }
 
         const pointsToAdd = codeDoc.data().points;
-
-        // Get user data
+        // 获取当前用户数据
         const userRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userRef);
 
@@ -153,21 +145,21 @@
           return;
         }
 
-        // ✅ Convert `rewardsPoint` to number to prevent string concatenation
+        // 强制转换为数字，确保数学加法正确（防止字符串拼接）
         const currentPoints = Number(userDoc.data().rewardsPoint) || 0;
         const updatedPoints = currentPoints + pointsToAdd;
 
-        // Update user's reward points
+        // 更新用户的积分
         await updateDoc(userRef, { rewardsPoint: updatedPoints });
 
-        // Delete redeemed code
+        // 删除兑换码文档，防止重复使用
         await deleteDoc(codeRef);
 
         messageBox.textContent = `Success! You earned ${pointsToAdd} points.`;
         messageBox.style.color = "green";
 
-        // Update UI
-        document.getElementById("current-points").textContent = `Your Points: ${updatedPoints}`;
+        // 更新显示的积分
+        document.getElementById("points-display").textContent = `Your Points: ${updatedPoints}`;
       } catch (error) {
         console.error("Error redeeming code:", error);
         messageBox.textContent = "An error occurred. Please try again.";
@@ -175,35 +167,33 @@
       }
     }
 
-    // Load current user points
+    // 加载当前用户积分
     async function loadUserPoints() {
-      const userRef = doc(db, "users", auth.currentUser.uid);
+      const userRef = doc(db, "users", currentUser.uid);
       const userDoc = await getDoc(userRef);
 
       if (userDoc.exists()) {
-        document.getElementById("current-points").textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
+        document.getElementById("points-display").textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
       }
     }
+
+    // 将 redeemCode 函数暴露到全局作用域，便于 HTML 中的 onclick 调用
+    window.redeemCode = redeemCode;
   </script>
 </head>
 <body>
   <div class="redeem-container">
     <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
     <h1>Redeem Your Code</h1>
-    
-    <!-- Display current user points -->
-    <p id="current-points">Your Points: 0</p>
-
-    <!-- Code input field -->
-    <input type="text" id="code-input" class="input-field" placeholder="Enter 6-digit code">
-
-    <!-- Redeem button -->
+    <!-- 显示当前用户积分 -->
+    <p id="points-display" class="points-display">Your Points: 0</p>
+    <!-- 输入兑换码 -->
+    <input type="text" id="code-input" class="input-field" placeholder="Enter 6-digit code" maxlength="6">
+    <!-- 兑换按钮 -->
     <button onclick="redeemCode()" class="redeem-btn">Redeem</button>
-
-    <!-- Message box -->
+    <!-- 显示信息 -->
     <p id="message" class="message"></p>
-
-    <!-- Back to dashboard button -->
+    <!-- 返回 Dashboard 的按钮 -->
     <button onclick="window.location.href='dashboard.html'" class="back-btn">Back to Dashboard</button>
   </div>
 </body>
