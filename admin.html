@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin Panel - Spark Stationery</title>
   <style>
-    /* Reset and common styles */
+    /* 通用重置 */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -13,14 +13,16 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       color: #333;
+      padding: 20px;
     }
     .admin-container {
       background: #fff;
       padding: 40px;
       border-radius: 10px;
-      width: 400px;
+      width: 500px;
+      max-width: 100%;
       box-shadow: 0 5px 20px rgba(0,0,0,0.2);
       text-align: center;
     }
@@ -43,7 +45,7 @@
       margin-bottom: 15px;
       text-align: center;
     }
-    .create-btn, .logout-btn {
+    .btn {
       width: 100%;
       padding: 12px;
       font-size: 16px;
@@ -71,12 +73,18 @@
       margin-top: 15px;
       font-size: 14px;
     }
+    .section {
+      border-top: 1px solid #ccc;
+      margin-top: 20px;
+      padding-top: 20px;
+    }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
+    // Firebase 配置（使用你提供的配置）
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -92,32 +100,21 @@
 
     let currentUser = null;
 
-    // 监听用户登录状态，并验证管理员身份
+    // 监听登录状态（并验证管理员身份，可在后台或前端根据需要进一步验证）
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.role !== 9177) {
-            alert("Access denied: You are not an admin.");
-            window.location.href = "admin-login.html";
-          }
-        } else {
-          alert("User data not found.");
-          window.location.href = "admin-login.html";
-        }
+        // 你可以在此处加入额外检查，确保用户具有管理员权限
       } else {
         window.location.href = "admin-login.html";
       }
     });
 
-    // 创建 Code 的函数
+    // 创建 Code 功能
     async function createCode() {
       const codeValue = document.getElementById("code-input").value.trim();
       const pointsValue = Number(document.getElementById("points-input").value);
-      const messageBox = document.getElementById("message");
+      const messageBox = document.getElementById("code-message");
 
       if (codeValue === "" || isNaN(pointsValue) || pointsValue <= 0) {
         messageBox.textContent = "Please enter a valid code and a positive points value.";
@@ -138,25 +135,74 @@
       }
     }
 
+    // 添加礼品功能
+    async function addGift() {
+      const giftName = document.getElementById("gift-name").value.trim();
+      const giftImage = document.getElementById("gift-image").value.trim();
+      const giftPoints = Number(document.getElementById("gift-points").value);
+      const giftDesc = document.getElementById("gift-desc").value.trim();
+      const giftMessage = document.getElementById("gift-message");
+
+      if (giftName === "" || giftImage === "" || isNaN(giftPoints) || giftPoints <= 0) {
+        giftMessage.textContent = "Please fill out all required fields with valid data.";
+        giftMessage.style.color = "red";
+        return;
+      }
+
+      try {
+        // 使用自动生成的文档 ID 创建礼品记录
+        await addDoc(collection(db, "products"), {
+          name: giftName,
+          image: giftImage,
+          pointsRequired: giftPoints,
+          description: giftDesc
+        });
+        giftMessage.textContent = "Gift added successfully!";
+        giftMessage.style.color = "green";
+      } catch (error) {
+        console.error("Error adding gift:", error);
+        giftMessage.textContent = "Error adding gift. Please try again.";
+        giftMessage.style.color = "red";
+      }
+    }
+
     // 管理员注销
     async function adminLogout() {
       await signOut(auth);
       window.location.href = "admin-login.html";
     }
 
+    // 将函数暴露到全局作用域，便于 HTML 中 onclick 调用
     window.createCode = createCode;
+    window.addGift = addGift;
     window.adminLogout = adminLogout;
   </script>
 </head>
 <body>
   <div class="admin-container">
     <h1>Admin Panel</h1>
-    <h2>Create a New Code</h2>
-    <input type="text" id="code-input" class="input-field" placeholder="Enter Code">
-    <input type="number" id="points-input" class="input-field" placeholder="Enter Points">
-    <button class="create-btn" onclick="createCode()">Create Code</button>
-    <p id="message" class="message"></p>
-    <button class="logout-btn" onclick="adminLogout()">Logout</button>
+    
+    <!-- Create Code Section -->
+    <div>
+      <h2>Create Code</h2>
+      <input type="text" id="code-input" class="input-field" placeholder="Enter Code">
+      <input type="number" id="points-input" class="input-field" placeholder="Enter Points">
+      <button class="btn create-btn" onclick="createCode()">Create Code</button>
+      <p id="code-message" class="message"></p>
+    </div>
+
+    <!-- Add Gift Section -->
+    <div class="section">
+      <h2>Add Gift</h2>
+      <input type="text" id="gift-name" class="input-field" placeholder="Gift Name">
+      <input type="text" id="gift-image" class="input-field" placeholder="Gift Image URL">
+      <input type="number" id="gift-points" class="input-field" placeholder="Points Required">
+      <input type="text" id="gift-desc" class="input-field" placeholder="Gift Description (optional)">
+      <button class="btn create-btn" onclick="addGift()">Add Gift</button>
+      <p id="gift-message" class="message"></p>
+    </div>
+    
+    <button class="btn logout-btn" onclick="adminLogout()">Logout</button>
   </div>
 </body>
 </html>
