@@ -1,194 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Redeem Reward Code</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    /* Reset some default styles */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #333;
-    }
-    .container {
-      background: #fff;
-      padding: 40px;
-      border-radius: 8px;
-      width: 350px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      text-align: center;
-    }
-    h1 {
-      font-size: 22px;
-      margin-bottom: 20px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      text-align: center;
-    }
-    button {
-      width: 100%;
-      background-color: #4285f4;
-      color: white;
-      padding: 12px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #357ae8;
-    }
-    #message {
-      margin-top: 15px;
-      font-size: 14px;
-    }
-    .points-display {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 10px;
-      color: #28a745;
-    }
-    .back-button {
-      margin-top: 15px;
-      display: block;
-      padding: 10px;
-      background-color: #6c757d;
-      color: white;
-      text-align: center;
-      border-radius: 5px;
-      text-decoration: none;
-    }
-    .back-button:hover {
-      background-color: #5a6268;
-    }
-  </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-    
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
-      authDomain: "spark-stationery.firebaseapp.com",
-      projectId: "spark-stationery",
-      storageBucket: "spark-stationery.firebasestorage.app",
-      messagingSenderId: "984949713835",
-      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
-    };
+async function redeemCode() {
+  const codeInput = document.getElementById("code-input").value.trim();
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  if (codeInput.length !== 6) {
+    messageBox.textContent = "Invalid code format. Please enter a 6-digit code.";
+    messageBox.style.color = "red";
+    return;
+  }
 
-    let currentUser = null;
-    const messageBox = document.getElementById("message");
-    const pointsDisplay = document.getElementById("points-display");
+  try {
+    // 检查兑换码是否存在
+    const codeRef = doc(db, "codes", codeInput);
+    const codeDoc = await getDoc(codeRef);
 
-    // 监听用户登录状态
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-        updatePointsDisplay();
-      } else {
-        window.location.href = "login.html"; // 用户未登录，跳转回登录页
-      }
-    });
-
-    async function redeemCode() {
-      const codeInput = document.getElementById("code-input").value.trim();
-
-      if (codeInput.length !== 6) {
-        messageBox.textContent = "Invalid code format. Please enter a 6-digit code.";
-        messageBox.style.color = "red";
-        return;
-      }
-
-      try {
-        // 检查兑换码是否存在
-        const codeRef = doc(db, "codes", codeInput);
-        const codeDoc = await getDoc(codeRef);
-
-        if (!codeDoc.exists()) {
-          messageBox.textContent = "Invalid or expired code.";
-          messageBox.style.color = "red";
-          return;
-        }
-
-        const pointsToAdd = codeDoc.data().points; // 获取兑换码的分数
-
-        // 获取当前用户数据
-        const userRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userRef);
-
-        if (!userDoc.exists()) {
-          messageBox.textContent = "User data not found!";
-          messageBox.style.color = "red";
-          return;
-        }
-
-        // ✅ 强制转换为数字，防止字符串拼接
-        const currentPoints = Number(userDoc.data().rewardsPoint) || 0;
-        const updatedPoints = currentPoints + pointsToAdd;
-
-        // 更新 Firestore 用户数据
-        await updateDoc(userRef, { rewardsPoint: updatedPoints });
-
-        // 删除已使用的兑换码
-        await deleteDoc(codeRef);
-
-        messageBox.textContent = `Success! You earned ${pointsToAdd} points.`;
-        messageBox.style.color = "green";
-
-        // 更新 UI
-        updatePointsDisplay();
-      } catch (error) {
-        console.error("Error redeeming code:", error);
-        messageBox.textContent = "An error occurred. Please try again.";
-        messageBox.style.color = "red";
-      }
+    if (!codeDoc.exists()) {
+      messageBox.textContent = "Invalid or expired code.";
+      messageBox.style.color = "red";
+      return;
     }
 
-    async function updatePointsDisplay() {
-      if (!currentUser) return;
-      
-      const userRef = doc(db, "users", currentUser.uid);
-      const userDoc = await getDoc(userRef);
+    const pointsToAdd = codeDoc.data().points; // 获取兑换码的分数
 
-      if (userDoc.exists()) {
-        pointsDisplay.textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
-      }
+    // 获取当前用户数据
+    const userRef = doc(db, "users", currentUser.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      messageBox.textContent = "User data not found!";
+      messageBox.style.color = "red";
+      return;
     }
 
-    window.redeemCode = redeemCode;
-  </script>
-</head>
-<body>
-  <div class="container">
-    <h1>Redeem Your Reward Code</h1>
-    <input type="text" id="code-input" placeholder="Enter 6-digit code" maxlength="6">
-    <button onclick="redeemCode()">Redeem</button>
-    <p id="message"></p>
-    <p class="points-display" id="points-display">Your Points: 0</p>
-    <a href="dashboard.html" class="back-button">Back to Dashboard</a>
-  </div>
-</body>
-</html>
+    // ✅ **确保 rewardsPoint 是数字**
+    const currentPoints = Number(userDoc.data().rewardsPoint) || 0; // 强制转换为数字
+    const updatedPoints = currentPoints + pointsToAdd; // ✅ 正确加法
+
+    // 更新 Firestore 用户数据
+    await updateDoc(userRef, { rewardsPoint: updatedPoints });
+
+    // 删除已使用的兑换码
+    await deleteDoc(codeRef);
+
+    messageBox.textContent = `Success! You earned ${pointsToAdd} points.`;
+    messageBox.style.color = "green";
+
+    // 更新 UI
+    updatePointsDisplay();
+  } catch (error) {
+    console.error("Error redeeming code:", error);
+    messageBox.textContent = "An error occurred. Please try again.";
+    messageBox.style.color = "red";
+  }
+}
