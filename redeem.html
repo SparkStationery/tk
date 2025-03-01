@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redeem Code - Spark Stationery</title>
+  <title>Redeem Reward Code</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+    /* Reset some default styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -17,66 +18,73 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      text-align: center;
+      color: #333;
     }
-    .redeem-container {
+    .container {
       background: #fff;
       padding: 40px;
       border-radius: 8px;
       width: 350px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    .logo {
-      width: 100px;
-      margin-bottom: 20px;
+      text-align: center;
     }
     h1 {
       font-size: 22px;
-      margin-bottom: 10px;
-    }
-    .points {
-      font-size: 18px;
-      color: #333;
       margin-bottom: 20px;
     }
-    .code-input {
+    input {
       width: 100%;
-      padding: 12px;
-      font-size: 18px;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
       text-align: center;
-      border: 2px solid #ccc;
-      border-radius: 4px;
-      margin-bottom: 15px;
     }
-    .code-input:focus {
-      border-color: #4285f4;
-    }
-    .redeem-btn, .back-btn {
+    button {
       width: 100%;
       background-color: #4285f4;
       color: white;
-      border: none;
       padding: 12px;
-      font-size: 18px;
-      border-radius: 4px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-      transition: background 0.3s ease;
-      margin-bottom: 10px;
+      transition: background-color 0.3s ease;
     }
-    .redeem-btn:hover, .back-btn:hover {
+    button:hover {
       background-color: #357ae8;
     }
-    .message {
+    #message {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .points-display {
+      font-size: 18px;
+      font-weight: bold;
       margin-top: 10px;
-      font-size: 16px;
+      color: #28a745;
+    }
+    .back-button {
+      margin-top: 15px;
+      display: block;
+      padding: 10px;
+      background-color: #6c757d;
+      color: white;
+      text-align: center;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+    .back-button:hover {
+      background-color: #5a6268;
     }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-    // Firebase configuration
+    
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -92,32 +100,22 @@
     const db = getFirestore(app);
 
     let currentUser = null;
-    const pointsDisplay = document.getElementById("points");
     const messageBox = document.getElementById("message");
+    const pointsDisplay = document.getElementById("points-display");
 
-    // Ensure user is logged in
-    onAuthStateChanged(auth, async (user) => {
+    // 监听用户登录状态
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
-        await updatePointsDisplay();
+        updatePointsDisplay();
       } else {
-        window.location.href = "login.html"; // Redirect to login if not logged in
+        window.location.href = "login.html"; // 用户未登录，跳转回登录页
       }
     });
 
-    // Function to update user points display
-    async function updatePointsDisplay() {
-      if (!currentUser) return;
-      const userRef = doc(db, "users", currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        pointsDisplay.textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
-      }
-    }
-
-    // Redeem Code Function
     async function redeemCode() {
       const codeInput = document.getElementById("code-input").value.trim();
+
       if (codeInput.length !== 6) {
         messageBox.textContent = "Invalid code format. Please enter a 6-digit code.";
         messageBox.style.color = "red";
@@ -125,7 +123,7 @@
       }
 
       try {
-        // Check if the code exists in Firestore "codes" collection
+        // 检查兑换码是否存在
         const codeRef = doc(db, "codes", codeInput);
         const codeDoc = await getDoc(codeRef);
 
@@ -135,9 +133,9 @@
           return;
         }
 
-        const pointsToAdd = codeDoc.data().points;
+        const pointsToAdd = codeDoc.data().points; // 获取兑换码的分数
 
-        // Get user data and update points
+        // 获取当前用户数据
         const userRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userRef);
 
@@ -147,16 +145,20 @@
           return;
         }
 
-        const updatedPoints = (userDoc.data().rewardsPoint || 0) + pointsToAdd;
+        // ✅ 强制转换为数字，防止字符串拼接
+        const currentPoints = Number(userDoc.data().rewardsPoint) || 0;
+        const updatedPoints = currentPoints + pointsToAdd;
+
+        // 更新 Firestore 用户数据
         await updateDoc(userRef, { rewardsPoint: updatedPoints });
 
-        // Delete the redeemed code from Firestore
+        // 删除已使用的兑换码
         await deleteDoc(codeRef);
 
         messageBox.textContent = `Success! You earned ${pointsToAdd} points.`;
         messageBox.style.color = "green";
 
-        // Update UI with new points
+        // 更新 UI
         updatePointsDisplay();
       } catch (error) {
         console.error("Error redeeming code:", error);
@@ -165,24 +167,28 @@
       }
     }
 
-    // Bind function to buttons
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById("redeem-btn").addEventListener("click", redeemCode);
-      document.getElementById("back-btn").addEventListener("click", () => {
-        window.location.href = "dashboard.html";
-      });
-    });
+    async function updatePointsDisplay() {
+      if (!currentUser) return;
+      
+      const userRef = doc(db, "users", currentUser.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        pointsDisplay.textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
+      }
+    }
+
+    window.redeemCode = redeemCode;
   </script>
 </head>
 <body>
-  <div class="redeem-container">
-    <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
-    <h1>Redeem Your Code</h1>
-    <p id="points" class="points">Loading points...</p>
-    <input type="text" id="code-input" class="code-input" placeholder="Enter 6-digit code" maxlength="6">
-    <button id="redeem-btn" class="redeem-btn">Redeem</button>
-    <button id="back-btn" class="back-btn">Back to Dashboard</button>
-    <p id="message" class="message"></p>
+  <div class="container">
+    <h1>Redeem Your Reward Code</h1>
+    <input type="text" id="code-input" placeholder="Enter 6-digit code" maxlength="6">
+    <button onclick="redeemCode()">Redeem</button>
+    <p id="message"></p>
+    <p class="points-display" id="points-display">Your Points: 0</p>
+    <a href="dashboard.html" class="back-button">Back to Dashboard</a>
   </div>
 </body>
 </html>
