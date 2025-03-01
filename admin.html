@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel - Spark Stationery</title>
+  <style>
+    /* Reset and common styles */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+    .admin-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      width: 400px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #444;
+    }
+    h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #444;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .create-btn, .logout-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 10px;
+    }
+    .create-btn {
+      background-color: #28a745;
+      color: white;
+    }
+    .create-btn:hover {
+      background-color: #218838;
+    }
+    .logout-btn {
+      background-color: #d9534f;
+      color: white;
+    }
+    .logout-btn:hover {
+      background-color: #c9302c;
+    }
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+      authDomain: "spark-stationery.firebaseapp.com",
+      projectId: "spark-stationery",
+      storageBucket: "spark-stationery.firebasestorage.app",
+      messagingSenderId: "984949713835",
+      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+
+    // 监听用户登录状态，并验证管理员身份
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.role !== 9177) {
+            alert("Access denied: You are not an admin.");
+            window.location.href = "admin-login.html";
+          }
+        } else {
+          alert("User data not found.");
+          window.location.href = "admin-login.html";
+        }
+      } else {
+        window.location.href = "admin-login.html";
+      }
+    });
+
+    // 创建 Code 的函数
+    async function createCode() {
+      const codeValue = document.getElementById("code-input").value.trim();
+      const pointsValue = Number(document.getElementById("points-input").value);
+      const messageBox = document.getElementById("message");
+
+      if (codeValue === "" || isNaN(pointsValue) || pointsValue <= 0) {
+        messageBox.textContent = "Please enter a valid code and a positive points value.";
+        messageBox.style.color = "red";
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, "codes", codeValue), {
+          points: pointsValue
+        });
+        messageBox.textContent = "Code created successfully!";
+        messageBox.style.color = "green";
+      } catch (error) {
+        console.error("Error creating code:", error);
+        messageBox.textContent = "Error creating code. Please try again.";
+        messageBox.style.color = "red";
+      }
+    }
+
+    // 管理员注销
+    async function adminLogout() {
+      await signOut(auth);
+      window.location.href = "admin-login.html";
+    }
+
+    window.createCode = createCode;
+    window.adminLogout = adminLogout;
+  </script>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>Admin Panel</h1>
+    <h2>Create a New Code</h2>
+    <input type="text" id="code-input" class="input-field" placeholder="Enter Code">
+    <input type="number" id="points-input" class="input-field" placeholder="Enter Points">
+    <button class="create-btn" onclick="createCode()">Create Code</button>
+    <p id="message" class="message"></p>
+    <button class="logout-btn" onclick="adminLogout()">Logout</button>
+  </div>
+</body>
+</html>
