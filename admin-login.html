@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Login - Spark Stationery</title>
+  <style>
+    /* Reset and common styles */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+    .login-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      width: 400px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    .logo {
+      width: 100px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #444;
+    }
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #4285f4;
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+    .google-btn:hover {
+      background-color: #357ae8;
+    }
+    .google-btn img {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+      authDomain: "spark-stationery.firebaseapp.com",
+      projectId: "spark-stationery",
+      storageBucket: "spark-stationery.firebasestorage.app",
+      messagingSenderId: "984949713835",
+      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    async function adminLogin() {
+      const provider = new GoogleAuthProvider();
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        // 检查用户在 Firestore "users" 集合中的 role 是否为 9177
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.role === 9177) {
+            // 管理员登录成功，跳转到 admin.html
+            window.location.href = "admin.html";
+          } else {
+            alert("Access denied: You are not an admin.");
+            await signOut(auth);
+          }
+        } else {
+          alert("User data not found.");
+          await signOut(auth);
+        }
+      } catch (error) {
+        console.error("Error during admin login:", error);
+        alert("An error occurred during login. Please try again.");
+      }
+    }
+    window.adminLogin = adminLogin;
+  </script>
+</head>
+<body>
+  <div class="login-container">
+    <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
+    <h1>Admin Login</h1>
+    <button class="google-btn" onclick="adminLogin()">
+      <img src="Google__G__logo.svg.png" alt="Google logo">
+      Sign in with Google
+    </button>
+  </div>
+</body>
+</html>
