@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Welcome to Spark Stationery!</title>
   <style>
     /* Reset default styles */
@@ -17,18 +18,20 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      padding: 20px;
       color: #333;
     }
     .login-container {
       background: #fff;
       padding: 40px;
       border-radius: 10px;
-      width: 400px;
+      width: 100%;
+      max-width: 400px; /* 适配桌面端 */
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
       text-align: center;
     }
     .logo {
-      width: 100px;
+      width: 80px;
       margin-bottom: 15px;
     }
     h1 {
@@ -43,13 +46,15 @@
       background-color: #4285f4;
       color: #fff;
       border: none;
-      padding: 12px 20px;
+      padding: 12px;
       border-radius: 5px;
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.3s ease;
       text-decoration: none;
       width: 100%;
+      max-width: 280px;
+      margin: 0 auto;
     }
     .google-btn:hover {
       background-color: #357ae8;
@@ -58,6 +63,26 @@
       width: 20px;
       height: 20px;
       margin-right: 10px;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 25px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      .google-btn {
+        flex-wrap: wrap; /* 小屏幕时允许换行 */
+        font-size: 14px;
+        padding: 10px;
+      }
+      .google-btn img {
+        width: 18px;
+        height: 18px;
+        margin-bottom: 5px;
+      }
     }
   </style>
   <script type="module">
