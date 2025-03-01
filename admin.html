@@ -100,11 +100,29 @@
 
     let currentUser = null;
 
-    // 监听登录状态（并验证管理员身份，可在后台或前端根据需要进一步验证）
+    // 监听登录状态，并验证管理员身份
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        // 你可以在此处加入额外检查，确保用户具有管理员权限
+        // 检查 Firestore 中的用户文档，确保 role 为 "9177"（或数字 9177，根据存储类型）
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          // 修改此处条件，保证与 Firestore 中 role 的存储类型一致
+          if (data.role === "9177" || data.role === 9177) {
+            // 管理员身份验证通过，继续展示页面
+            console.log("Admin verified.");
+          } else {
+            alert("Access denied: You are not an admin.");
+            await signOut(auth);
+            window.location.href = "admin-login.html";
+          }
+        } else {
+          alert("User data not found.");
+          await signOut(auth);
+          window.location.href = "admin-login.html";
+        }
       } else {
         window.location.href = "admin-login.html";
       }
