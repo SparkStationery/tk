@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Firebase Google 登录</title>
+  <!-- 使用 type="module" 引入 Firebase 模块 -->
+  <script type="module">
+    // 从 Firebase CDN 引入所需模块
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    
+    // Firebase 配置（使用你提供的配置）
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+      authDomain: "spark-stationery.firebaseapp.com",
+      projectId: "spark-stationery",
+      storageBucket: "spark-stationery.firebasestorage.app",
+      messagingSenderId: "984949713835",
+      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
+    };
+
+    // 初始化 Firebase 应用
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 定义 Google 登录函数
+    async function googleLogin() {
+      const provider = new GoogleAuthProvider();
+      try {
+        // 弹窗进行 Google 登录
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        console.log("用户登录成功：", user);
+        
+        // 准备保存到 Firestore 的用户数据
+        const userData = {
+          name: user.displayName,
+          email: user.email,
+          rewardsPoint: 0  // 默认奖励积分为 0
+        };
+
+        // 使用用户 UID 作为文档 ID，保存数据到 "users" 集合
+        await setDoc(doc(db, "users", user.uid), userData);
+        console.log("用户信息已保存到 Firestore。");
+
+        // 登录成功后可以重定向到其他页面，例如 home.html
+        // window.location.href = "home.html";
+      } catch (error) {
+        console.error("登录过程中出现错误：", error);
+      }
+    }
+
+    // 等待 DOM 加载完成后，给登录按钮绑定点击事件
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("login-btn").addEventListener("click", googleLogin);
+    });
+  </script>
+</head>
+<body>
+  <h1>登录</h1>
+  <button id="login-btn">使用 Google 登录</button>
+</body>
+</html>
