@@ -1,13 +1,70 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Firebase Google 登录</title>
+  <title>Welcome to Spark Stationery!</title>
+  <style>
+    /* Reset some default styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+    .login-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 8px;
+      width: 350px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    /* Logo styles */
+    .logo {
+      width: 100px;
+      margin: 0 auto 20px;
+      display: block;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      background-color: #4285f4;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-decoration: none;
+    }
+    .google-btn:hover {
+      background-color: #357ae8;
+    }
+    .google-btn img {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+  </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -17,43 +74,52 @@
       appId: "1:984949713835:web:64ad1c176af08897edc0ee"
     };
 
-    // 初始化 Firebase 应用
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // Google login function
     async function googleLogin() {
       const provider = new GoogleAuthProvider();
       try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        console.log("用户登录成功：", user);
+        console.log("User logged in successfully:", user);
         
-        // 构造用户数据
+        // Build user data
         const userData = {
           name: user.displayName,
           email: user.email,
-          rewardsPoint: 0  // 默认奖励积分为 0
+          rewardsPoint: 0  // default rewards point
         };
 
-        // 保存数据到 Firestore 的 "users" 集合，文档ID使用用户的 uid
+        // Save user data to Firestore "users" collection (document id is user's uid)
         await setDoc(doc(db, "users", user.uid), userData);
-        console.log("用户信息已保存到 Firestore。");
+        console.log("User data saved to Firestore.");
 
-        // 登录成功后重定向到 dashboard.html
+        // Redirect to dashboard after successful login
         window.location.href = "dashboard.html";
       } catch (error) {
-        console.error("登录过程中出现错误：", error);
+        console.error("Error during login:", error);
       }
     }
 
+    // Bind click event after DOM is loaded
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById("login-btn").addEventListener("click", googleLogin);
+      document.getElementById("google-btn").addEventListener("click", googleLogin);
     });
   </script>
 </head>
 <body>
-  <h1>登录</h1>
-  <button id="login-btn">使用 Google 登录</button>
+  <div class="login-container">
+    <!-- Your custom logo -->
+    <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
+    <h1>Welcome to Spark Stationery!</h1>
+    <button id="google-btn" class="google-btn">
+      <img src="Google__G__logo.svg.png" alt="Google logo">
+      Sign in with Google
+    </button>
+  </div>
 </body>
 </html>
