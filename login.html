@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Welcome to Spark Stationery!</title>
+  <title>Firebase Google Login</title>
   <style>
-    /* Reset default styles */
+    /* 样式保持不变 */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -18,20 +17,18 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      padding: 20px;
       color: #333;
     }
     .login-container {
       background: #fff;
       padding: 40px;
       border-radius: 10px;
-      width: 100%;
-      max-width: 400px; /* 适配桌面端 */
+      width: 400px;
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
       text-align: center;
     }
     .logo {
-      width: 80px;
+      width: 100px;
       margin-bottom: 15px;
     }
     h1 {
@@ -51,7 +48,6 @@
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      text-decoration: none;
       width: 100%;
       max-width: 280px;
       margin: 0 auto;
@@ -64,33 +60,13 @@
       height: 20px;
       margin-right: 10px;
     }
-
-    /* 响应式设计 */
-    @media (max-width: 480px) {
-      .login-container {
-        padding: 25px;
-      }
-      h1 {
-        font-size: 20px;
-      }
-      .google-btn {
-        flex-wrap: wrap; /* 小屏幕时允许换行 */
-        font-size: 14px;
-        padding: 10px;
-      }
-      .google-btn img {
-        width: 18px;
-        height: 18px;
-        margin-bottom: 5px;
-      }
-    }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     
-    // Firebase configuration
+    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -100,12 +76,12 @@
       appId: "1:984949713835:web:64ad1c176af08897edc0ee"
     };
 
-    // Initialize Firebase
+    // 初始化 Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Google login function
+    // Google 登录函数
     async function googleLogin() {
       const provider = new GoogleAuthProvider();
       try {
@@ -113,25 +89,36 @@
         const user = result.user;
         console.log("User logged in successfully:", user);
         
-        // Build user data
-        const userData = {
-          name: user.displayName,
-          email: user.email,
-          rewardsPoint: 0  // default rewards point
-        };
-
-        // Save user data to Firestore "users" collection (document id is user's uid)
-        await setDoc(doc(db, "users", user.uid), userData);
-        console.log("User data saved to Firestore.");
-
-        // Redirect to dashboard after successful login
+        // 用户文档引用
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        // 如果用户文档不存在，则创建新文档，初始积分为 0；如果存在，则仅更新姓名和邮箱
+        if (!userDoc.exists()) {
+          const userData = {
+            name: user.displayName,
+            email: user.email,
+            rewardsPoint: 0  // 新用户默认积分为 0
+          };
+          await setDoc(userRef, userData);
+          console.log("New user data saved to Firestore.");
+        } else {
+          // 如果用户已存在，可选择更新姓名和邮箱（不修改 rewardsPoint）
+          await updateDoc(userRef, { 
+            name: user.displayName, 
+            email: user.email 
+          });
+          console.log("Existing user data updated.");
+        }
+        
+        // 登录成功后重定向到 dashboard.html
         window.location.href = "dashboard.html";
       } catch (error) {
         console.error("Error during login:", error);
       }
     }
 
-    // Bind click event after DOM is loaded
+    // DOM 加载完成后绑定点击事件
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById("google-btn").addEventListener("click", googleLogin);
     });
@@ -139,7 +126,7 @@
 </head>
 <body>
   <div class="login-container">
-    <!-- Your custom logo -->
+    <!-- 自定义 logo -->
     <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
     <h1>Welcome to Spark Stationery!</h1>
     <button id="google-btn" class="google-btn">
