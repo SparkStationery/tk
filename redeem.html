@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redeem Code - Spark Stationery</title>
   <style>
-    /* Reset and global styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -18,7 +17,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      color: #333;
+      text-align: center;
     }
     .redeem-container {
       background: #fff;
@@ -26,15 +25,18 @@
       border-radius: 8px;
       width: 350px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      text-align: center;
     }
     .logo {
       width: 100px;
-      margin: 0 auto 20px;
-      display: block;
+      margin-bottom: 20px;
     }
     h1 {
       font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .points {
+      font-size: 18px;
+      color: #333;
       margin-bottom: 20px;
     }
     .code-input {
@@ -44,13 +46,12 @@
       text-align: center;
       border: 2px solid #ccc;
       border-radius: 4px;
-      margin-bottom: 20px;
-      outline: none;
+      margin-bottom: 15px;
     }
     .code-input:focus {
       border-color: #4285f4;
     }
-    .redeem-btn {
+    .redeem-btn, .back-btn {
       width: 100%;
       background-color: #4285f4;
       color: white;
@@ -60,12 +61,13 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background 0.3s ease;
+      margin-bottom: 10px;
     }
-    .redeem-btn:hover {
+    .redeem-btn:hover, .back-btn:hover {
       background-color: #357ae8;
     }
     .message {
-      margin-top: 15px;
+      margin-top: 10px;
       font-size: 16px;
     }
   </style>
@@ -90,21 +92,32 @@
     const db = getFirestore(app);
 
     let currentUser = null;
+    const pointsDisplay = document.getElementById("points");
+    const messageBox = document.getElementById("message");
 
     // Ensure user is logged in
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
+        await updatePointsDisplay();
       } else {
         window.location.href = "login.html"; // Redirect to login if not logged in
       }
     });
 
+    // Function to update user points display
+    async function updatePointsDisplay() {
+      if (!currentUser) return;
+      const userRef = doc(db, "users", currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        pointsDisplay.textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
+      }
+    }
+
     // Redeem Code Function
     async function redeemCode() {
       const codeInput = document.getElementById("code-input").value.trim();
-      const messageBox = document.getElementById("message");
-
       if (codeInput.length !== 6) {
         messageBox.textContent = "Invalid code format. Please enter a 6-digit code.";
         messageBox.style.color = "red";
@@ -112,7 +125,7 @@
       }
 
       try {
-        // Check if the code exists in the "codes" collection
+        // Check if the code exists in Firestore "codes" collection
         const codeRef = doc(db, "codes", codeInput);
         const codeDoc = await getDoc(codeRef);
 
@@ -122,10 +135,9 @@
           return;
         }
 
-        const codeData = codeDoc.data();
-        const pointsToAdd = codeData.points;
+        const pointsToAdd = codeDoc.data().points;
 
-        // Get user data from Firestore
+        // Get user data and update points
         const userRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userRef);
 
@@ -135,17 +147,17 @@
           return;
         }
 
-        const userData = userDoc.data();
-        const updatedPoints = (userData.rewardsPoint || 0) + pointsToAdd;
-
-        // Update the user's rewards points
+        const updatedPoints = (userDoc.data().rewardsPoint || 0) + pointsToAdd;
         await updateDoc(userRef, { rewardsPoint: updatedPoints });
 
-        // Delete the used code from Firestore
+        // Delete the redeemed code from Firestore
         await deleteDoc(codeRef);
 
-        messageBox.textContent = `Success! You have earned ${pointsToAdd} points.`;
+        messageBox.textContent = `Success! You earned ${pointsToAdd} points.`;
         messageBox.style.color = "green";
+
+        // Update UI with new points
+        updatePointsDisplay();
       } catch (error) {
         console.error("Error redeeming code:", error);
         messageBox.textContent = "An error occurred. Please try again.";
@@ -153,9 +165,12 @@
       }
     }
 
-    // Bind function to button
+    // Bind function to buttons
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById("redeem-btn").addEventListener("click", redeemCode);
+      document.getElementById("back-btn").addEventListener("click", () => {
+        window.location.href = "dashboard.html";
+      });
     });
   </script>
 </head>
@@ -163,8 +178,10 @@
   <div class="redeem-container">
     <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
     <h1>Redeem Your Code</h1>
+    <p id="points" class="points">Loading points...</p>
     <input type="text" id="code-input" class="code-input" placeholder="Enter 6-digit code" maxlength="6">
     <button id="redeem-btn" class="redeem-btn">Redeem</button>
+    <button id="back-btn" class="back-btn">Back to Dashboard</button>
     <p id="message" class="message"></p>
   </div>
 </body>
