@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+      authDomain: "spark-stationery.firebaseapp.com",
+      projectId: "spark-stationery",
+      storageBucket: "spark-stationery.firebasestorage.app",
+      messagingSenderId: "984949713835",
+      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Listen to auth state changes
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is signed in, get user document from Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          // Display user information
+          document.getElementById("user-info").innerHTML = `
+            <h2>Welcome, ${userData.name}</h2>
+            <p><strong>Email:</strong> ${userData.email}</p>
+            <p><strong>Rewards Points:</strong> ${userData.rewardsPoint}</p>
+          `;
+        } else {
+          document.getElementById("user-info").innerHTML = "<p>User data not found.</p>";
+        }
+      } else {
+        // If no user is signed in, redirect to login page
+        window.location.href = "login.html";
+      }
+    });
+  </script>
+</head>
+<body>
+  <h1>Dashboard</h1>
+  <div id="user-info">
+    <!-- User information will be displayed here -->
+  </div>
+</body>
+</html>
