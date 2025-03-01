@@ -85,7 +85,7 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-    // Firebase configuration
+    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -95,7 +95,7 @@
       appId: "1:984949713835:web:64ad1c176af08897edc0ee"
     };
 
-    // Initialize Firebase
+    // 初始化 Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
@@ -112,7 +112,7 @@
       }
     });
 
-    // 兑换代码函数
+    // 兑换奖励码函数
     async function redeemCode() {
       const codeInput = document.getElementById("code-input").value.trim();
       const messageBox = document.getElementById("message");
@@ -124,7 +124,7 @@
       }
 
       try {
-        // 检查 Firestore 中是否存在该兑换码
+        // 检查 Firestore 中是否存在该兑换码（同时确保 points 为数字）
         const codeRef = doc(db, "codes", codeInput);
         const codeDoc = await getDoc(codeRef);
 
@@ -133,8 +133,8 @@
           messageBox.style.color = "red";
           return;
         }
+        const pointsToAdd = Number(codeDoc.data().points) || 0;
 
-        const pointsToAdd = codeDoc.data().points;
         // 获取当前用户数据
         const userRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userRef);
@@ -145,11 +145,11 @@
           return;
         }
 
-        // 强制转换为数字，确保数学加法正确（防止字符串拼接）
+        // 强制转换为数字，确保数学加法正确
         const currentPoints = Number(userDoc.data().rewardsPoint) || 0;
         const updatedPoints = currentPoints + pointsToAdd;
 
-        // 更新用户的积分
+        // 更新 Firestore 中用户的积分
         await updateDoc(userRef, { rewardsPoint: updatedPoints });
 
         // 删除兑换码文档，防止重复使用
@@ -171,13 +171,12 @@
     async function loadUserPoints() {
       const userRef = doc(db, "users", currentUser.uid);
       const userDoc = await getDoc(userRef);
-
       if (userDoc.exists()) {
         document.getElementById("points-display").textContent = `Your Points: ${userDoc.data().rewardsPoint}`;
       }
     }
 
-    // 将 redeemCode 函数暴露到全局作用域，便于 HTML 中的 onclick 调用
+    // 暴露函数到全局作用域，便于 HTML 中的 onclick 调用
     window.redeemCode = redeemCode;
   </script>
 </head>
@@ -187,13 +186,13 @@
     <h1>Redeem Your Code</h1>
     <!-- 显示当前用户积分 -->
     <p id="points-display" class="points-display">Your Points: 0</p>
-    <!-- 输入兑换码 -->
+    <!-- 兑换码输入框 -->
     <input type="text" id="code-input" class="input-field" placeholder="Enter 6-digit code" maxlength="6">
     <!-- 兑换按钮 -->
     <button onclick="redeemCode()" class="redeem-btn">Redeem</button>
-    <!-- 显示信息 -->
+    <!-- 消息提示区域 -->
     <p id="message" class="message"></p>
-    <!-- 返回 Dashboard 的按钮 -->
+    <!-- 返回 Dashboard 按钮 -->
     <button onclick="window.location.href='dashboard.html'" class="back-btn">Back to Dashboard</button>
   </div>
 </body>
