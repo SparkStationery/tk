@@ -1,195 +1,158 @@
 <!DOCTYPE html>
+<html lang="zh">
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>可兑换礼品 | Spark Stationery</title>
   <title>Redeemable Gifts | Spark Stationery</title>
-  <style>
+<style>
+    /* 全局样式 */
     /* Global styles */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f8f8f8;
-      text-align: center;
-    }
+body {
+font-family: Arial, sans-serif;
+margin: 0;
+padding: 0;
+background: #f8f8f8;
+text-align: center;
+}
+    /* 头部样式 */
     /* Header styles */
-    header {
-      background: #FF6B6B;
-      color: white;
-      padding: 15px;
-      font-size: 22px;
-    }
-    header a {
-      color: white;
-      text-decoration: none;
-      margin: 0 15px;
-      font-size: 18px;
-    }
+header {
+background: #FF6B6B;
+color: white;
+@@ -26,7 +26,7 @@
+margin: 0 15px;
+font-size: 18px;
+}
+    /* 礼品列表，自适应布局 */
     /* Products container - responsive layout */
-    .product-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      padding: 20px;
-      max-width: 1200px;
-      margin: auto;
-    }
+.product-container {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+@@ -35,7 +35,7 @@
+max-width: 1200px;
+margin: auto;
+}
+    /* 礼品卡片 */
     /* Product card */
-    .product {
-      background: white;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transition: transform 0.2s ease-in-out;
-    }
-    .product:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
-    }
-    .product img {
-      width: 100%;
-      height: 200px;
-      object-fit: contain;
-      background: #f0f0f0;
-      border-radius: 8px;
-      padding: 5px;
-    }
-    .product h3 {
-      font-size: 18px;
-      margin: 10px 0;
-    }
-    .product p {
-      font-size: 16px;
-      margin: 5px 0;
-    }
+.product {
+background: white;
+border-radius: 10px;
+@@ -63,7 +63,7 @@
+font-size: 16px;
+margin: 5px 0;
+}
+    /* 兑换状态标识 */
     /* Redeem status badge */
-    .badge {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-    .redeemable {
-      background-color: #28a745;
-      color: white;
-    }
-    .not-enough {
-      background-color: #d9534f;
-      color: white;
-    }
+.badge {
+display: inline-block;
+padding: 5px 10px;
+@@ -79,7 +79,7 @@
+background-color: #d9534f;
+color: white;
+}
+    /* 底部样式 */
     /* Footer styles */
-    footer {
-      background: #333;
-      color: white;
-      padding: 10px;
-      text-align: center;
-      font-size: 14px;
-      margin-top: 20px;
-    }
+footer {
+background: #333;
+color: white;
+@@ -88,7 +88,7 @@
+font-size: 14px;
+margin-top: 20px;
+}
+    /* 加载提示 */
     /* Loading message */
-    .loading {
-      text-align: center;
-      margin: 20px;
-      font-size: 18px;
-      color: #555;
-    }
-  </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+.loading {
+text-align: center;
+margin: 20px;
+@@ -101,7 +101,7 @@
+import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
+    // 使用你提供的 Firebase 配置
     // Use your provided Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
-      authDomain: "spark-stationery.firebaseapp.com",
-      projectId: "spark-stationery",
-      storageBucket: "spark-stationery.firebasestorage.app",
-      messagingSenderId: "984949713835",
-      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
-    };
+const firebaseConfig = {
+apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+authDomain: "spark-stationery.firebaseapp.com",
+@@ -118,7 +118,7 @@
+let currentUser = null;
+let userPoints = 0;
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    let currentUser = null;
-    let userPoints = 0;
-
+    // 检查登录状态，若未登录则跳转到登录页面
     // Check login status; if not logged in, redirect to login.html
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-        loadUserPoints();
-      } else {
-        window.location.href = "login.html";
-      }
-    });
+onAuthStateChanged(auth, (user) => {
+if (user) {
+currentUser = user;
+@@ -128,7 +128,7 @@
+}
+});
 
+    // 加载当前用户积分（假设用户数据存储在 "users" 集合中，文档 ID 为用户 UID）
     // Load current user's points (assume user data is stored in "users" collection with document ID equal to user's UID)
-    async function loadUserPoints() {
-      try {
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          userPoints = Number(userSnap.data().rewardsPoint) || 0;
-        }
-        loadProducts();
-      } catch (error) {
+async function loadUserPoints() {
+try {
+const userRef = doc(db, "users", currentUser.uid);
+@@ -138,11 +138,11 @@
+}
+loadProducts();
+} catch (error) {
+        console.error("加载用户积分出错：", error);
         console.error("Error loading user points:", error);
-      }
-    }
+}
+}
 
+    // 加载产品数据（假设产品数据存储在 "products" 集合中，每个产品至少包含 name、image、pointsRequired 字段）
     // Load product data (assume product data is stored in "products" collection, each document includes at least fields: name, image, pointsRequired)
-    async function loadProducts() {
-      const container = document.getElementById("product-list");
-      container.innerHTML = "";
-      document.getElementById("loading").style.display = "block";
-      try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        querySnapshot.forEach((docSnapshot) => {
-          const product = docSnapshot.data();
-          const imageUrl = (product.image && product.image.startsWith("http")) ? product.image : "default-placeholder.jpg";
-          const productDiv = document.createElement("div");
-          productDiv.classList.add("product");
-          productDiv.innerHTML = `
-            <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
-            <h3>${product.name}</h3>
+async function loadProducts() {
+const container = document.getElementById("product-list");
+container.innerHTML = "";
+@@ -157,24 +157,24 @@
+productDiv.innerHTML = `
+           <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
+           <h3>${product.name}</h3>
+            <p>所需积分: ${product.pointsRequired}</p>
             <p>Points Required: ${product.pointsRequired}</p>
-          `;
+         `;
+          // 判断用户积分是否足够兑换该礼品
           // Check if user points are enough to redeem this product
-          const badge = document.createElement("div");
-          badge.classList.add("badge");
-          if (userPoints >= Number(product.pointsRequired)) {
+const badge = document.createElement("div");
+badge.classList.add("badge");
+if (userPoints >= Number(product.pointsRequired)) {
+            badge.textContent = "可兑换";
             badge.textContent = "Redeemable";
-            badge.classList.add("redeemable");
-          } else {
+badge.classList.add("redeemable");
+} else {
+            badge.textContent = "积分不足";
             badge.textContent = "Insufficient Points";
-            badge.classList.add("not-enough");
-          }
-          productDiv.appendChild(badge);
-          container.appendChild(productDiv);
-        });
-      } catch (error) {
+badge.classList.add("not-enough");
+}
+productDiv.appendChild(badge);
+container.appendChild(productDiv);
+});
+} catch (error) {
+        console.error("加载产品数据出错：", error);
+        container.innerHTML = "<p>加载产品失败，请稍后再试。</p>";
         console.error("Error loading products:", error);
         container.innerHTML = "<p>Failed to load products. Please try again later.</p>";
-      } finally {
-        document.getElementById("loading").style.display = "none";
-      }
-    }
-  </script>
+} finally {
+document.getElementById("loading").style.display = "none";
+}
+@@ -183,13 +183,13 @@ <h3>${product.name}</h3>
 </head>
 <body>
-  <header>
+<header>
+    <h1>🎁 可兑换礼品</h1>
+    <a href="dashboard.html">⬅ 返回仪表板</a>
     <h1>🎁 Redeemable Gifts</h1>
     <a href="dashboard.html">⬅ Back to Dashboard</a>
-  </header>
+</header>
+  <div id="loading" class="loading" style="display:none;">加载中...</div>
   <div id="loading" class="loading" style="display:none;">Loading...</div>
-  <div id="product-list" class="product-container"></div>
-  <footer>
+<div id="product-list" class="product-container"></div>
+<footer>
+    <p>© 2025 Spark Stationery. All Rights Reserved.</p>
     <p>&copy; 2025 Spark Stationery. All Rights Reserved.</p>
-  </footer>
+</footer>
 </body>
 </html>
