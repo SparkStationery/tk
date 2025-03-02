@@ -5,43 +5,87 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Redeemable Gifts | Spark Stationery</title>
   <style>
-    /* Global styles */
-    body {
-      font-family: Arial, sans-serif;
+    /* Global Reset */
+    * {
       margin: 0;
       padding: 0;
-      background: #f8f8f8;
-      text-align: center;
+      box-sizing: border-box;
     }
-    /* Header styles */
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f8f8f8;
+      color: #333;
+      line-height: 1.6;
+    }
+    /* Header */
     header {
       background: #FF6B6B;
-      color: white;
-      padding: 15px;
-      font-size: 22px;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    header a {
-      color: white;
+    header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    header nav a {
+      color: #fff;
       text-decoration: none;
       margin: 0 15px;
-      font-size: 18px;
+      font-size: 16px;
+      transition: color 0.3s ease;
     }
-    /* Products container - responsive layout */
+    header nav a:hover {
+      color: #FFD700;
+    }
+    /* User Info Card */
+    .user-info {
+      background: #fff;
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 800px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+    }
+    .user-info img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 20px;
+    }
+    .user-details {
+      text-align: left;
+    }
+    .user-details h2 {
+      font-size: 20px;
+      margin-bottom: 5px;
+      color: #444;
+    }
+    .user-details p {
+      font-size: 16px;
+      color: #777;
+      margin-bottom: 3px;
+    }
+    /* Products Grid */
     .product-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
       padding: 20px;
       max-width: 1200px;
-      margin: auto;
+      margin: 20px auto;
     }
-    /* Product card */
     .product {
-      background: white;
+      background: #fff;
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transition: transform 0.2s ease-in-out;
+      transition: transform 0.3s ease;
+      text-align: center;
     }
     .product:hover {
       transform: translateY(-5px);
@@ -50,20 +94,20 @@
     .product img {
       width: 100%;
       height: 200px;
-      object-fit: contain;
-      background: #f0f0f0;
+      object-fit: cover;
       border-radius: 8px;
-      padding: 5px;
+      margin-bottom: 15px;
     }
     .product h3 {
       font-size: 18px;
-      margin: 10px 0;
+      margin-bottom: 10px;
+      color: #444;
     }
     .product p {
       font-size: 16px;
-      margin: 5px 0;
+      color: #555;
+      margin-bottom: 10px;
     }
-    /* Redeem status badge */
     .badge {
       display: inline-block;
       padding: 5px 10px;
@@ -73,27 +117,27 @@
     }
     .redeemable {
       background-color: #28a745;
-      color: white;
+      color: #fff;
     }
     .not-enough {
       background-color: #d9534f;
-      color: white;
+      color: #fff;
     }
-    /* Footer styles */
-    footer {
-      background: #333;
-      color: white;
-      padding: 10px;
-      text-align: center;
-      font-size: 14px;
-      margin-top: 20px;
-    }
-    /* Loading message */
+    /* Loading Message */
     .loading {
       text-align: center;
       margin: 20px;
       font-size: 18px;
       color: #555;
+    }
+    /* Footer */
+    footer {
+      background: #333;
+      color: #fff;
+      text-align: center;
+      padding: 15px 0;
+      font-size: 14px;
+      margin-top: 20px;
     }
   </style>
   <script type="module">
@@ -101,7 +145,7 @@
     import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-    // Use your provided Firebase configuration
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -122,27 +166,32 @@
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
-        loadUserPoints();
+        loadUserData();
       } else {
         window.location.href = "login.html";
       }
     });
 
-    // Load current user's points (assume user data is stored in "users" collection with document ID equal to user's UID)
-    async function loadUserPoints() {
+    // Load user information from the "users" collection
+    async function loadUserData() {
       try {
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          userPoints = Number(userSnap.data().rewardsPoint) || 0;
+          const userData = userSnap.data();
+          userPoints = Number(userData.rewardsPoint) || 0;
+          document.getElementById("user-name").textContent = userData.name;
+          document.getElementById("user-email").textContent = userData.email;
+          document.getElementById("user-points").textContent = `Rewards Points: ${userData.rewardsPoint}`;
+          document.getElementById("profile-pic").src = currentUser.photoURL || "default-avatar.png";
         }
         loadProducts();
       } catch (error) {
-        console.error("Error loading user points:", error);
+        console.error("Error loading user data:", error);
       }
     }
 
-    // Load product data (assume product data is stored in "products" collection, each document includes at least fields: name, image, pointsRequired)
+    // Load product data from the "products" collection
     async function loadProducts() {
       const container = document.getElementById("product-list");
       container.innerHTML = "";
@@ -159,7 +208,7 @@
             <h3>${product.name}</h3>
             <p>Points Required: ${product.pointsRequired}</p>
           `;
-          // Check if user points are enough to redeem this product
+          // Determine if the user has enough points
           const badge = document.createElement("div");
           badge.classList.add("badge");
           if (userPoints >= Number(product.pointsRequired)) {
@@ -183,11 +232,28 @@
 </head>
 <body>
   <header>
-    <h1>🎁 Redeemable Gifts</h1>
-    <a href="dashboard.html">⬅ Back to Dashboard</a>
+    <h1>Redeemable Gifts</h1>
+    <nav>
+      <a href="dashboard.html">⬅ Back to Dashboard</a>
+    </nav>
   </header>
+
+  <!-- User Information Card -->
+  <div class="user-info">
+    <img id="profile-pic" src="default-avatar.png" alt="Profile Picture">
+    <div class="user-details">
+      <h2 id="user-name">Loading...</h2>
+      <p id="user-email">Loading...</p>
+      <p id="user-points">Rewards Points: 0</p>
+    </div>
+  </div>
+
+  <!-- Loading Message -->
   <div id="loading" class="loading" style="display:none;">Loading...</div>
+  
+  <!-- Products Grid -->
   <div id="product-list" class="product-container"></div>
+  
   <footer>
     <p>&copy; 2025 Spark Stationery. All Rights Reserved.</p>
   </footer>
