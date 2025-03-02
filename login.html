@@ -98,7 +98,7 @@
           const userData = {
             name: user.displayName,
             email: user.email,
-            rewardsPoint: 0  // 新用户默认积分为 0
+            rewardsPoint: 10  // 新用户默认积分为 0
           };
           await setDoc(userRef, userData);
           console.log("New user data saved to Firestore.");
