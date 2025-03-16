@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Spark Stationery Login</title>
+  <title>Login - Spark Stationery</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    /* 样式保持不变 */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -37,6 +36,29 @@
       margin-bottom: 20px;
       color: #444;
     }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .login-btn {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+    .login-btn:hover {
+      background-color: #0056b3;
+    }
     .google-btn {
       display: flex;
       align-items: center;
@@ -61,29 +83,6 @@
       height: 20px;
       margin-right: 10px;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    .login-btn {
-      background-color: #FF6B6B;
-      color: white;
-      border: none;
-      padding: 12px;
-      font-size: 18px;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-      transition: background 0.3s ease;
-    }
-    .login-btn:hover {
-      background-color: #E04F4F;
-    }
     .error {
       color: red;
       font-size: 14px;
@@ -93,7 +92,7 @@
       display: block;
       margin-top: 15px;
       font-size: 16px;
-      color: #007BFF;
+      color: #28a745;
       text-decoration: none;
     }
     .register-link:hover {
@@ -102,7 +101,7 @@
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     // Firebase 配置
@@ -120,6 +119,56 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    let loginAttempts = 0; // 失败次数计数
+
+    // 处理邮箱 & 密码登录
+    async function emailLogin() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorMessage = document.getElementById("error-message");
+
+      errorMessage.textContent = "";
+
+      if (!email || !password) {
+        errorMessage.textContent = "邮箱和密码不能为空！";
+        return;
+      }
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 检查 Firestore 中的用户数据
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+          await setDoc(userRef, {
+            name: user.displayName || "Unknown",
+            email: user.email,
+            rewardsPoint: 10
+          });
+        } else {
+          await updateDoc(userRef, {
+            name: user.displayName || "Unknown",
+            email: user.email
+          });
+        }
+
+        // 登录成功，跳转到 dashboard
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        console.error("登录失败:", error);
+        loginAttempts++;
+
+        if (loginAttempts >= 3) {
+          window.location.href = "reset.html";
+        } else {
+          errorMessage.textContent = `登录失败，剩余 ${3 - loginAttempts} 次尝试！`;
+        }
+      }
+    }
+
     // Google 登录
     async function googleLogin() {
       const provider = new GoogleAuthProvider();
@@ -134,72 +183,33 @@
           await setDoc(userRef, {
             name: user.displayName,
             email: user.email,
-            rewardsPoint: 10  
+            rewardsPoint: 10
           });
         } else {
-          await updateDoc(userRef, { name: user.displayName, email: user.email });
+          await updateDoc(userRef, { 
+            name: user.displayName, 
+            email: user.email 
+          });
         }
 
         window.location.href = "dashboard.html";
       } catch (error) {
-        console.error("Google 登录错误:", error);
-      }
-    }
-
-    // 邮箱 & 密码登录
-    async function emailLogin() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const errorMessage = document.getElementById("error-message");
-
-      errorMessage.textContent = ""; 
-
-      if (!email || !password) {
-        errorMessage.textContent = "邮箱和密码不能为空！";
-        return;
-      }
-
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
-
-        if (!userDoc.exists()) {
-          await setDoc(userRef, {
-            name: email.split("@")[0],
-            email: email,
-            rewardsPoint: 10  
-          });
-        } else {
-          await updateDoc(userRef, { email: email });
-        }
-
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        console.error("邮箱登录失败:", error);
-        if (error.code === "auth/user-not-found") {
-          errorMessage.textContent = "该邮箱未注册，请先注册！";
-        } else if (error.code === "auth/wrong-password") {
-          errorMessage.textContent = "密码错误，请重新输入！";
-        } else {
-          errorMessage.textContent = "登录失败，请检查网络或稍后再试！";
-        }
+        console.error("Google 登录失败:", error);
       }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById("google-btn").addEventListener("click", googleLogin);
       document.getElementById("login-btn").addEventListener("click", emailLogin);
+      document.getElementById("google-btn").addEventListener("click", googleLogin);
     });
   </script>
 </head>
 <body>
   <div class="login-container">
     <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
-    <h1>Welcome to Spark Stationery!</h1>
+    <h1>Welcome Back!</h1>
 
-    <input type="email" id="email" placeholder="请输入邮箱" required>
+    <input type="email" id="email" placeholder="请输入电子邮件" required>
     <input type="password" id="password" placeholder="请输入密码" required>
     <button id="login-btn" class="login-btn">登录</button>
     <p class="error" id="error-message"></p>
