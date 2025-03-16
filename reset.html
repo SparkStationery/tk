@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reset Password - Spark Stationery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+    .reset-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      width: 400px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    .logo {
+      width: 100px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #444;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .reset-btn {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+    .reset-btn:hover {
+      background-color: #0056b3;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .success {
+      color: green;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .back-link {
+      display: block;
+      margin-top: 15px;
+      font-size: 16px;
+      color: #28a745;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+    // Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+      authDomain: "spark-stationery.firebaseapp.com",
+      projectId: "spark-stationery",
+      storageBucket: "spark-stationery.firebasestorage.app",
+      messagingSenderId: "984949713835",
+      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
+    };
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    async function resetPassword() {
+      const email = document.getElementById("email").value.trim();
+      const message = document.getElementById("message");
+
+      message.textContent = "";
+      message.className = "";
+
+      if (!email) {
+        message.textContent = "请输入您的电子邮件地址！";
+        message.className = "error";
+        return;
+      }
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        message.textContent = "重置密码邮件已发送，请检查您的邮箱！";
+        message.className = "success";
+      } catch (error) {
+        console.error("密码重置失败:", error);
+        message.textContent = "密码重置失败，请检查邮箱是否正确或已注册！";
+        message.className = "error";
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("reset-btn").addEventListener("click", resetPassword);
+    });
+  </script>
+</head>
+<body>
+  <div class="reset-container">
+    <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
+    <h1>重置密码</h1>
+
+    <input type="email" id="email" placeholder="请输入您的电子邮件" required>
+    <button id="reset-btn" class="reset-btn">发送重置邮件</button>
+    <p id="message"></p>
+
+    <a href="login.html" class="back-link">返回登录</a>
+  </div>
+</body>
+</html>
