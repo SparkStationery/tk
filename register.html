@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Spark Stationery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+    .register-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      width: 400px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    .logo {
+      width: 100px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #444;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .register-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+    .register-btn:hover {
+      background-color: #218838;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .login-link {
+      display: block;
+      margin-top: 15px;
+      font-size: 16px;
+      color: #007BFF;
+      text-decoration: none;
+    }
+    .login-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
+      authDomain: "spark-stationery.firebaseapp.com",
+      projectId: "spark-stationery",
+      storageBucket: "spark-stationery.firebasestorage.app",
+      messagingSenderId: "984949713835",
+      appId: "1:984949713835:web:64ad1c176af08897edc0ee"
+    };
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    async function registerUser() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorMessage = document.getElementById("error-message");
+
+      errorMessage.textContent = "";
+
+      // 输入验证
+      if (!name || !email || !password) {
+        errorMessage.textContent = "所有字段都必须填写！";
+        return;
+      }
+      if (password.length < 6) {
+        errorMessage.textContent = "密码必须至少6位数！";
+        return;
+      }
+
+      try {
+        // 创建用户
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 在 Firestore 创建用户文档（初始积分 10）
+        await setDoc(doc(db, "users", user.uid), {
+          name: name,
+          email: email,
+          rewardsPoint: 10
+        });
+
+        // 注册成功后跳转
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        console.error("注册失败:", error);
+        if (error.code === "auth/email-already-in-use") {
+          errorMessage.textContent = "该邮箱已被注册！";
+        } else {
+          errorMessage.textContent = "注册失败，请稍后再试！";
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("register-btn").addEventListener("click", registerUser);
+    });
+  </script>
+</head>
+<body>
+  <div class="register-container">
+    <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
+    <h1>Create an Account</h1>
+
+    <input type="text" id="name" placeholder="请输入姓名" required>
+    <input type="email" id="email" placeholder="请输入电子邮件" required>
+    <input type="password" id="password" placeholder="请输入密码 (至少6位)" required>
+    <button id="register-btn" class="register-btn">注册</button>
+    <p class="error" id="error-message"></p>
+
+    <a href="login.html" class="login-link">已经有账号？立即登录</a>
+  </div>
+</body>
+</html>
