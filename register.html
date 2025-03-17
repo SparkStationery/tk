@@ -5,11 +5,7 @@
   <title>注册 - Spark Stationery</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -27,65 +23,32 @@
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
       text-align: center;
     }
-    .logo {
-      width: 100px;
-      margin-bottom: 15px;
-    }
-    h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
-      color: #444;
-    }
+    h1 { font-size: 24px; margin-bottom: 20px; color: #444; }
     input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
+      width: 100%; padding: 10px; margin: 10px 0;
+      border: 1px solid #ccc; border-radius: 5px; font-size: 16px;
     }
     .btn {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      padding: 12px;
-      font-size: 18px;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-      transition: background 0.3s ease;
+      background-color: #007BFF; color: white;
+      border: none; padding: 12px; font-size: 18px;
+      border-radius: 5px; cursor: pointer;
+      width: 100%; margin-top: 10px; transition: background 0.3s ease;
     }
-    .btn:hover {
-      background-color: #0056b3;
-    }
-    .error {
-      color: red;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-    .success {
-      color: green;
-      font-size: 14px;
-      margin-top: 10px;
-    }
+    .btn:hover { background-color: #0056b3; }
+    .error { color: red; font-size: 14px; margin-top: 10px; }
+    .success { color: green; font-size: 14px; margin-top: 10px; }
+    .timer { font-size: 16px; margin-top: 10px; color: #ff4500; }
     .login-link {
-      display: block;
-      margin-top: 15px;
-      font-size: 16px;
-      color: #28a745;
-      text-decoration: none;
+      display: block; margin-top: 15px; font-size: 16px;
+      color: #28a745; text-decoration: none;
     }
-    .login-link:hover {
-      text-decoration: underline;
-    }
+    .login-link:hover { text-decoration: underline; }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, deleteUser } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyC3o88TMqHSoyG-OvAzZny_VzfcmuNwGCA",
       authDomain: "spark-stationery.firebaseapp.com",
@@ -95,19 +58,24 @@
       appId: "1:984949713835:web:64ad1c176af08897edc0ee"
     };
 
-    // 初始化 Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    let checkInterval;
+    let remainingTime = 300;
+    let currentUser = null;  // 存储当前注册的用户对象
 
     async function registerUser() {
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
       const message = document.getElementById("message");
+      const timerDisplay = document.getElementById("timer");
 
       message.textContent = "";
       message.className = "";
+      timerDisplay.textContent = "";
 
       if (!name || !email || !password) {
         message.textContent = "请填写所有字段！";
@@ -116,31 +84,19 @@
       }
 
       try {
-        // 创建 Firebase 账号
+        // 创建 Firebase 账号但不存入 Firestore
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // 立即在 Firestore 存储用户信息
-        const userRef = doc(db, "users", user.uid);
-        await setDoc(userRef, {
-          name: name,
-          email: email,
-          rewardsPoint: 10, // 初始积分
-          verified: 0 // 新增字段，默认 0，等验证后改为 1
-        });
-
-        console.log("新用户数据已存入 Firestore");
+        currentUser = userCredential.user;  // 保存用户对象
 
         // 发送验证邮件
-        await sendEmailVerification(user);
-        message.textContent = "注册成功！请前往邮箱验证您的账户。";
+        await sendEmailVerification(currentUser);
+        message.textContent = "验证码已发送，请检查您的邮箱！";
         message.className = "success";
 
-        // 短暂提示后跳转
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 3000);
-
+        // 启动 300 秒倒计时
+        remainingTime = 300;
+        updateTimer();
+        checkInterval = setInterval(() => checkEmailVerification(currentUser, name, email), 5000);
       } catch (error) {
         console.error("注册失败:", error);
         if (error.code === "auth/email-already-in-use") {
@@ -152,6 +108,60 @@
       }
     }
 
+    async function checkEmailVerification(user, name, email) {
+      await user.reload();
+      remainingTime -= 5;
+
+      if (user.emailVerified) {
+        clearInterval(checkInterval);
+        saveUserToFirestore(user.uid, name, email);
+      } else if (remainingTime <= 0) {
+        clearInterval(checkInterval);
+        deleteUnverifiedUser(user);
+      }
+
+      updateTimer();
+    }
+
+    async function deleteUnverifiedUser(user) {
+      try {
+        await deleteUser(user);
+        document.getElementById("message").textContent = "验证超时，账户已删除，请重新注册！";
+        document.getElementById("message").className = "error";
+      } catch (error) {
+        console.error("删除未验证用户失败:", error);
+        document.getElementById("message").textContent = "删除未验证用户失败，请稍后再试！";
+        document.getElementById("message").className = "error";
+      }
+    }
+
+    async function saveUserToFirestore(uid, name, email) {
+      try {
+        await setDoc(doc(db, "users", uid), {
+          name: name,
+          email: email,
+          rewardsPoint: 10,
+          verified: 1
+        });
+
+        document.getElementById("message").textContent = "注册成功！正在跳转...";
+        document.getElementById("message").className = "success";
+        setTimeout(() => window.location.href = "login.html", 3000);
+      } catch (error) {
+        console.error("存入 Firestore 失败:", error);
+        document.getElementById("message").textContent = "存储用户数据失败，请联系管理员！";
+        document.getElementById("message").className = "error";
+      }
+    }
+
+    function updateTimer() {
+      if (remainingTime > 0) {
+        document.getElementById("timer").textContent = `剩余时间: ${remainingTime} 秒`;
+      } else {
+        document.getElementById("timer").textContent = "";
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById("register-btn").addEventListener("click", registerUser);
     });
@@ -159,9 +169,7 @@
 </head>
 <body>
   <div class="register-container">
-    <img src="your-logo.png" alt="Spark Stationery Logo" class="logo">
     <h1>创建账户</h1>
-
     <input type="text" id="name" placeholder="请输入您的姓名" required>
     <input type="email" id="email" placeholder="请输入您的电子邮件" required>
     <input type="password" id="password" placeholder="请输入您的密码" required>
@@ -169,6 +177,7 @@
     <button id="register-btn" class="btn">注册</button>
 
     <p id="message"></p>
+    <p id="timer" class="timer"></p>
 
     <a href="login.html" class="login-link">已有账户？点击登录</a>
   </div>
